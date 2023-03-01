@@ -5,7 +5,6 @@ import dlogging
 from demail.gmail import SendEmail
 
 
-package_name = os.path.basename(__file__)
 logger = dlogging.NewLogger(__file__, use_cd=True)
 logger.info('Beginning package')
 
@@ -21,7 +20,7 @@ except Exception as e:
     logger.critical(f'{e}\n', exc_info=True)
     to_email_addresses = os.getenv('email_fail')
     SendEmail(to_email_addresses=to_email_addresses
-                        , subject=f'Python Error - {package_name}'
+                        , subject=f'Python Error - MM Daily Dash'
                         , body=e
                         , attach_file_address=logger.handlers[0].baseFilename
                         , user=os.getenv('email_uid')

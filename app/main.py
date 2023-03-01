@@ -22,7 +22,7 @@ import dlogging
 
 logger = dlogging.NewLogger(__file__, use_cd=True)
 
-cat_list = ['Coaching', 'Project Next', 'Project Next Level', 'Legacy', 'Mastermind', 'Other']
+cat_list = os.getenv('cat_list').split(',')
 
 
 #%% SQL Connector
@@ -197,7 +197,7 @@ body = ["Good morning!<br><br>Here is today's update:<br><br>",
         '<br><br>Have a great day!']
 
 SendEmail(to_email_addresses=os.getenv('email_send')
-        , subject= 'Daily Update - ' + dt.date.today().strftime('%m-%d-%Y')
+        , subject= 'MM Daily Dash - ' + dt.date.today().strftime('%m-%d-%Y')
         , body=body
         , user=os.getenv('email_uid')
         , password=os.getenv('email_pwd'))
