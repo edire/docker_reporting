@@ -25,6 +25,17 @@ logger = dlogging.NewLogger(__file__, use_cd=True)
 cat_list = os.getenv('cat_list').split(',')
 
 
+#%% Functions
+
+logger.info('Create Functions')
+
+def df_add_missing_clmns(df, clist = cat_list):
+    for x in clist:
+        if x not in df.columns:
+            df[x] = 0
+    return df
+
+
 #%% SQL Connector
 
 logger.info('SQL Connector')
@@ -57,6 +68,7 @@ dfg = df.groupby(['new_category', 'yrmnth'])['amount'].sum()
 dfg = dfg.reset_index(drop=False)
 dfg = dfg.sort_values('new_category')
 dfg = dfg.pivot(index='yrmnth', columns='new_category', values='amount')
+dfg = df_add_missing_clmns(dfg)
 dfg = dfg[cat_list]
 
 
@@ -102,6 +114,7 @@ dfs_aggc = pd.DataFrame(dfs_aggc, index=dfs_all.index, columns=['Total'])
 
 dfs_all = pd.concat([dfs_all, dfs_aggc], axis=1)
 dfs_all = dfs_all.reset_index(drop=False, names='Date')
+dfs_all = df_add_missing_clmns(dfs_all)
 dfs_all = dfs_all[['Date'] + cat_list + ['Total']]
 
 

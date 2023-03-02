@@ -15,11 +15,11 @@ try:
 
         logger.info('Done, No Problems!')
 
+
 except Exception as e:
     e = str(e)
     logger.critical(f'{e}\n', exc_info=True)
-    to_email_addresses = os.getenv('email_fail')
-    SendEmail(to_email_addresses=to_email_addresses
+    SendEmail(to_email_addresses=os.getenv('email_fail')
                         , subject=f'Python Error - MM Daily Dash'
                         , body=e
                         , attach_file_address=logger.handlers[0].baseFilename
