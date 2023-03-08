@@ -1,3 +1,6 @@
+*.env
 logs/
 *.png
-*.env
+*.csv
+*.html
+__pycache__/

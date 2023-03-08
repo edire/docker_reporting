@@ -20,7 +20,7 @@ except Exception as e:
     e = str(e)
     logger.critical(f'{e}\n', exc_info=True)
     SendEmail(to_email_addresses=os.getenv('email_fail')
-                        , subject=f'Python Error - MM Daily Dash'
+                        , subject=f'Error - MM Daily Dash'
                         , body=e
                         , attach_file_address=logger.handlers[0].baseFilename
                         , user=os.getenv('email_uid')
