@@ -330,13 +330,13 @@ dfi.export(dfg_all_formatted, filepath_month_table)
 
 logger.info('Send Email Update')
 
-body = ["Good morning!  Here is today's update:<br>",
+body = ["Good morning!  Here is today's update:<br><br>",
         filepath_day_chart,
-        "<br><br>",
+        "<br>",
         filepath_day_table,
-        "<br><br>",
+        "<br>",
         filepath_month_chart,
-        "<br><br>",
+        "<br>",
         filepath_month_table,
         "<br>For additional views please visit the following link:",
         "https://lookerstudio.google.com/reporting/b656cb16-6007-467b-85ef-b412931d5b7a",
