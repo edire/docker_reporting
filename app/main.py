@@ -260,7 +260,7 @@ for clmn in cat_list + ['Total']:
 
 
 dfg_all_formatted = dfg_all.style\
-    .set_caption("Current Month Net Cash by Product by Day")\
+    .set_caption("Net Cash by Product by Month")\
     .hide(axis="index")\
     .set_properties(**{'text-align': 'left'})\
     .set_properties(**{'font-size': '14px;'})\
