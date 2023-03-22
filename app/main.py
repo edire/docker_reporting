@@ -2,7 +2,8 @@
 
 import socket
 host_name = socket.gethostname()
-if host_name == 'powerhouse':
+local_name = 'powerhouse'
+if host_name == local_name:
     from dotenv import load_dotenv
     load_dotenv('./.env')
 
@@ -13,16 +14,15 @@ from ddb.mysql import SQL
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime as dt
-import dataframe_image as dfi
+# import dataframe_image as dfi
 from demail.gmail import SendEmail
 import os
 import dlogging
 from matplotlib.dates import date2num
-import numpy as np
+from dwebdriver import ChromeDriver
 
 
 logger = dlogging.NewLogger(__file__, use_cd=True)
-
 cat_list = os.getenv('cat_list').split(',')
 
 
@@ -35,6 +35,17 @@ def df_add_missing_clmns(df, clist = cat_list):
         if x not in df.columns:
             df[x] = 0
     return df
+
+def screenshot(filepath_html, filepath_png):
+    filepath_html = os.path.realpath(filepath_html)
+    if host_name == local_name:
+        filepath_html = 'file:\\' + filepath_html
+    else:
+        filepath_html = 'file://' + filepath_html
+    with ChromeDriver(no_sandbox=True, window_size='1920,1080') as driver:
+        driver.get(filepath_html)
+        chart = driver.find_element(by='xpath', value='/html/body/table')
+        chart.screenshot(filepath_png)
 
 
 #%% SQL Connector
@@ -97,7 +108,7 @@ filepath_day_chart = './day_chart.png'
 width = 0.3
 x = date2num(dfs.index)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(10, 4.8))
 ax.bar(x, height=dfs.sum(axis=1))
 for i, y in enumerate(dfs.sum(axis=1)):
     ax.annotate('${:,.0f}K'.format(y*1e-3), (x[i], y), ha='center', va='bottom')
@@ -124,6 +135,7 @@ plt.savefig(filepath_day_chart)
 logger.info('Daily Table')
 
 filepath_day_table = './day_table.png'
+filepath_day_table_html = './day_table.html'
 
 fmt = lambda x: '-' if pd.isna(x) else '${:,.0f}'.format(x) if x >= 0 else '$({:,.0f})'.format(abs(x))
 
@@ -139,7 +151,6 @@ dfg_all_formatted = dfg_all.style\
     .set_properties(**{'font-size': '14px;'})\
     .set_properties(**{'font-family': 'Century Gothic, sans-serif;'})\
     .set_properties(**{'padding': '3px 20px 3px 5px;'})\
-    .set_properties(**{'width': 'auto'})\
     .set_table_styles([
         # Caption
         {
@@ -195,9 +206,15 @@ dfg_all_formatted = dfg_all.style\
         },
         ])\
     .format(clmn_format_dict)
-    
 
-dfi.export(dfg_all_formatted, filepath_day_table)
+# dfi.export(dfg_all_formatted, filepath_day_table)
+
+with open(filepath_day_table_html, 'w') as f:
+    html = dfg_all_formatted.to_html()
+    html = html.replace('<style type="text/css">', '<style type="text/css">\ntable {\n\tborder-spacing: 0;\n}')
+    f.write(html)
+
+screenshot(filepath_day_table_html, filepath_day_table)
 
 
 #%% Monthly Data ################################################################################################################
@@ -251,6 +268,7 @@ plt.savefig(filepath_month_chart)
 logger.info('Monthly Table')
 
 filepath_month_table = './month_table.png'
+filepath_month_table_html = './month_table.html'
 
 fmt = lambda x: '-' if pd.isna(x) else '${:,.0f}'.format(x) if x >= 0 else '$({:,.0f})'.format(abs(x))
 
@@ -266,7 +284,6 @@ dfg_all_formatted = dfg_all.style\
     .set_properties(**{'font-size': '14px;'})\
     .set_properties(**{'font-family': 'Century Gothic, sans-serif;'})\
     .set_properties(**{'padding': '3px 20px 3px 5px;'})\
-    .set_properties(**{'width': 'auto'})\
     .set_table_styles([
         # Caption
         {
@@ -323,7 +340,14 @@ dfg_all_formatted = dfg_all.style\
         ])\
     .format(clmn_format_dict)
     
-dfi.export(dfg_all_formatted, filepath_month_table)
+# dfi.export(dfg_all_formatted, filepath_month_table)
+
+with open(filepath_month_table_html, 'w') as f:
+    html = dfg_all_formatted.to_html()
+    html = html.replace('<style type="text/css">', '<style type="text/css">\ntable {\n\tborder-spacing: 0;\n}')
+    f.write(html)
+
+screenshot(filepath_month_table_html, filepath_month_table)
 
 
 #%% Send Email Update ################################################################################################################
