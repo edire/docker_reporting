@@ -189,7 +189,7 @@ dfg_all_formatted = dfg_all.style\
         },
         # Last Row
         {
-            'selector': 'tbody tr:last-child',
+            'selector': 'tbody tr:last-child td',
             'props': 'font-weight: bold;\
                 border-top: 2px solid #305496;'
         },
@@ -322,7 +322,7 @@ dfg_all_formatted = dfg_all.style\
         },
         # Last Row
         {
-            'selector': 'tbody tr:last-child',
+            'selector': 'tbody tr:last-child td',
             'props': 'font-weight: bold;\
                 border-top: 2px solid #305496;'
         },
