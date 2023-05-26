@@ -4,3 +4,4 @@ logs/
 *.csv
 *.html
 __pycache__/
+*.bat
