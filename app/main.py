@@ -618,11 +618,13 @@ body = ["Good morning!  Here is today's update:<br><br>",
         # "https://lookerstudio.google.com/reporting/b656cb16-6007-467b-85ef-b412931d5b7a",
         "<br>Have a great day!"]
 
-SendEmail(to_email_addresses=os.getenv('email_send')
+SendEmail(to_email_addresses=os.getenv('email_fail')
         , subject= 'MM Daily Dash - ' + dt.date.today().strftime('%m-%d-%Y')
         , body=body
         , user=os.getenv('email_uid')
-        , password=os.getenv('email_pwd'))
+        , password=os.getenv('email_pwd')
+        , bcc_email_addresses=os.getenv('email_send')
+        )
 
 
 # %%
