@@ -2,7 +2,7 @@
 
 import socket
 host_name = socket.gethostname()
-local_name = 'powerhouse'
+local_name = 'eric-Latitude-3440'
 if host_name == local_name:
     from dotenv import load_dotenv
     load_dotenv('./.env', override=True)
@@ -42,7 +42,7 @@ def screenshot(filepath_html, filepath_png):
         filepath_html = 'file:\\' + filepath_html
     else:
         filepath_html = 'file://' + filepath_html
-    with ChromeDriver(no_sandbox=True, window_size='1920,1080') as driver:
+    with ChromeDriver(no_sandbox=True, window_size='1920,1080', use_chromium=True) as driver:
         driver.get(filepath_html)
         chart = driver.find_element(by='xpath', value='/html/body/table')
         chart.screenshot(filepath_png)
@@ -419,6 +419,7 @@ ax.set_xlabel('Month')
 ax.legend(loc='best')
 
 ax.yaxis.set_major_formatter(lambda x, pos: '{:,.0f}'.format(x*1e-6))
+plt.xticks(rotation=45)
 plt.tight_layout()
 
 plt.savefig(filepath_month_chart)
