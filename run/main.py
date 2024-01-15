@@ -10,7 +10,7 @@ if host_name == local_name:
 
 #%% Imports
 
-from ddb.bigquery import SQL
+from dbharbor.bigquery import SQL
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime as dt
@@ -23,7 +23,7 @@ from dwebdriver import ChromeDriver
 
 
 logger = dlogging.NewLogger(__file__, use_cd=True)
-cat_list = os.getenv('cat_list').split(',')
+cat_list = os.getenv('CAT_LIST').split(',')
 
 
 #%% Functions
@@ -39,7 +39,7 @@ def df_add_missing_clmns(df, clist = cat_list):
 def screenshot(filepath_html, filepath_png):
     filepath_html = os.path.realpath(filepath_html)
     if host_name == local_name:
-        filepath_html = 'file:\\' + filepath_html
+        filepath_html = 'file:\\\\' + filepath_html
     else:
         filepath_html = 'file://' + filepath_html
     with ChromeDriver(no_sandbox=True, window_size='1920,1080', use_chromium=True) as driver:
@@ -53,7 +53,7 @@ fmt = lambda x: '-' if pd.isna(x) or x == 0 else '${:,.0f}'.format(x) if x >= 0 
 #%% SQL Connector
 
 logger.info('SQL Connector')
-con = SQL(os.getenv('bigquery_cred'))
+con = SQL(os.getenv('BIGQUERY_CRED'))
 
 
 #%% Get Actuals Data
@@ -75,26 +75,33 @@ df['yrmnth'] = df['effective_date'].dt.to_period('M')
 
 logger.info('Get Budget Data')
 
-df_budget = con.read("""
-select eom
-  , category_budget
-  , sum(amount) as amount
-from `bbg-platform.analytics_stage.fct_budget_2023`
-group by 1, 2
-order by 1, 2;
-""")
+# df_budget = con.read("""
+# select eom
+#   , category_budget
+#   , sum(amount) as amount
+# from `bbg-platform.analytics_stage.fct_budget_2023`
+# group by 1, 2
+# order by 1, 2;
+# """)
 
-df_budget['eom'] = pd.to_datetime(df_budget['eom'])
-df_budget['yrmnth'] = df_budget['eom'].dt.to_period('M')
+# df_budget['eom'] = pd.to_datetime(df_budget['eom'])
+# df_budget['yrmnth'] = df_budget['eom'].dt.to_period('M')
+
+df_budget = df[df['effective_date'].dt.year == dt.datetime.now().year - 1]
+df_budget = df_budget.groupby(['yrmnth', 'new_category'])['amount'].sum()
+df_budget = pd.DataFrame(df_budget).reset_index()
+df_budget.rename({'yrmnth':'eom', 'new_category':'category_budget'}, axis=1, inplace=True)
+df_budget['eom'] = df_budget['eom'].apply(lambda x: x.to_timestamp() + pd.offsets.MonthEnd(0))
 
 
 #%% Daily Data ################################################################################################################
 
 logger.info('Daily Data')
 
-eom = dt.date.today() + dt.timedelta(-1) + pd.offsets.MonthEnd(0)
+eom = dt.date.today() + dt.timedelta(days=-1) + pd.offsets.MonthEnd(0)
 recent_date = eom + pd.offsets.MonthBegin(-1)
 recent_date = dt.datetime(recent_date.year, recent_date.month, recent_date.day)
+peom = eom + pd.offsets.MonthEnd(-12)
 
 dfs = df[df['effective_date'] >= recent_date]
 dfs = dfs.pivot(index='effective_date', columns='new_category', values='amount')
@@ -119,17 +126,20 @@ dfg_all = dfg_all[['Date'] + cat_list + ['Total']]
 # Month's budget Chart
 dfs_budget = pd.DataFrame()
 dfs_budget.index = dfs.index
-dfs_budget['budget'] = df_budget[df_budget['eom'] == eom]['amount'].sum()
+dfs_budget['budget'] = df_budget[df_budget['eom'] == peom]['amount'].sum()
 
 # Month's budget Table
-dfg_aggr_budget = df_budget[df_budget['eom'] == eom][['category_budget', 'amount']]
+dfg_aggr_budget = df_budget[df_budget['eom'] == peom][['category_budget', 'amount']]
 dfg_aggr_budget.set_index('category_budget', inplace=True)
 dfg_aggr_budget = pd.concat([dfg_aggr, dfg_aggr_budget.T], axis=0)
 dfg_aggr_budget = dfg_aggr_budget.fillna(0)
 dfg_aggr_budget['Total'] = dfg_aggr_budget.sum(axis=1)
 dfg_aggr_diff = dfg_aggr_budget.iloc[0] - dfg_aggr_budget.iloc[1]
 dfg_aggr_budget = pd.concat([dfg_aggr_budget, pd.DataFrame(dfg_aggr_diff).T])
-dfg_aggr_budget.index = ['Actuals', 'Budget', 'Variance']
+dfg_aggr_budget.index = ['Current Year', 'Prior Year', 'Variance']
+for x in cat_list:
+    if x not in dfg_aggr_budget.columns:
+        dfg_aggr_budget[x] = 0
 dfg_aggr_budget = dfg_aggr_budget[cat_list + ['Total']]
 dfg_aggr_budget.reset_index(inplace=True, names='Type')
 
@@ -153,7 +163,7 @@ ax.plot(x, dfs.sum(axis=1).cumsum(), color='black', label='MTD Total')
 i, y = list(enumerate(dfs.sum(axis=1).cumsum()))[-1]
 ax.annotate('{:,.1f}M'.format(y*1e-6), (x[i], y), ha='left', va='center')
 
-ax.plot(x, dfs_budget, color='red', ls='--', label='Current Month Budget')
+ax.plot(x, dfs_budget, color='red', ls='--', label='Prior Year')
 i, y = list(enumerate(dfs_budget['budget']))[0]
 ax.annotate('{:,.1f}M'.format(y*1e-6), (x[i], y), ha='right', va='center', color='red')
 
@@ -267,7 +277,7 @@ for clmn in cat_list + ['Total']:
     clmn_format_dict[clmn] = fmt
 
 dfg_aggr_budget_formatted = dfg_aggr_budget.style\
-    .set_caption("Current Month Cash by Product vs Budget")\
+    .set_caption("Current Month Cash by Product vs Prior Year")\
     .hide(axis="index")\
     .set_properties(**{'text-align': 'left'})\
     .set_properties(**{'font-size': '14px;'})\
@@ -343,7 +353,8 @@ screenshot(filepath_budget_table_html, filepath_budget_table)
 
 logger.info('Monthly Data')
 
-dfg = df.groupby(['new_category', 'yrmnth'])['amount'].sum()
+dfg = df[df['yrmnth'].dt.year == eom.year]
+dfg = dfg.groupby(['new_category', 'yrmnth'])['amount'].sum()
 dfg = dfg.reset_index(drop=False)
 dfg = dfg.sort_values('new_category')
 dfg = dfg.pivot(index='yrmnth', columns='new_category', values='amount')
@@ -369,21 +380,21 @@ dfg_all = dfg_all[['Date'] + cat_list + ['Total']]
 # Cumulative Budget
 dfg_budget = pd.DataFrame()
 dfg_budget.index = dfg.index
-dfg_budget = df_budget[df_budget['eom'] <= eom]
-dfg_budget = dfg_budget[['yrmnth', 'amount']]
-dfg_budget.set_index('yrmnth', inplace=True)
-dfg_budget = dfg_budget.groupby('yrmnth')['amount'].sum().cumsum()
+dfg_budget = df_budget[df_budget['eom'] <= peom]
+dfg_budget = dfg_budget[['eom', 'amount']]
+dfg_budget.set_index('eom', inplace=True)
+dfg_budget = dfg_budget.groupby('eom')['amount'].sum().cumsum()
 dfg_budget = pd.DataFrame(dfg_budget)
 
 # YTD budget Table
-dfg_aggr_budget = df_budget[df_budget['eom'] <= eom].groupby('category_budget')['amount'].sum()
+dfg_aggr_budget = df_budget[df_budget['eom'] <= peom].groupby('category_budget')['amount'].sum()
 dfg_aggr_budget = pd.DataFrame(dfg_aggr_budget)
 dfg_aggr_budget = pd.concat([dfg_aggr, dfg_aggr_budget.T], axis=0)
 dfg_aggr_budget = dfg_aggr_budget.fillna(0)
 dfg_aggr_budget['Total'] = dfg_aggr_budget.sum(axis=1)
 dfg_aggr_diff = dfg_aggr_budget.iloc[0] - dfg_aggr_budget.iloc[1]
 dfg_aggr_budget = pd.concat([dfg_aggr_budget, pd.DataFrame(dfg_aggr_diff).T])
-dfg_aggr_budget.index = ['Actuals', 'Budget', 'Variance']
+dfg_aggr_budget.index = ['Current Year', 'Prior Year', 'Variance']
 dfg_aggr_budget = dfg_aggr_budget[cat_list + ['Total']]
 dfg_aggr_budget.reset_index(inplace=True, names='Type')
 
@@ -527,7 +538,7 @@ for clmn in cat_list + ['Total']:
 
 
 dfg_all_formatted = dfg_aggr_budget.style\
-    .set_caption("YTD Cash by Product vs Budget")\
+    .set_caption("YTD Cash by Product vs Prior Year")\
     .hide(axis="index")\
     .set_properties(**{'text-align': 'left'})\
     .set_properties(**{'font-size': '14px;'})\
@@ -604,12 +615,12 @@ screenshot(filepath_ytd_budget_html, filepath_ytd_budget)
 logger.info('Send Email Update')
 
 body = ["Good morning!  Here is today's update:<br><br>",
-        filepath_month_chart,
-        "<br>",
-        filepath_ytd_budget,
-        "<br>",
-        filepath_month_table,
-        "<br>",
+        # filepath_month_chart,
+        # "<br>",
+        # filepath_ytd_budget,
+        # "<br>",
+        # filepath_month_table,
+        # "<br>",
         filepath_day_chart,
         "<br>",
         filepath_budget_table,
@@ -619,12 +630,12 @@ body = ["Good morning!  Here is today's update:<br><br>",
         # "https://lookerstudio.google.com/reporting/b656cb16-6007-467b-85ef-b412931d5b7a",
         "<br>Have a great day!"]
 
-SendEmail(to_email_addresses=os.getenv('email_fail')
+SendEmail(to_email_addresses=os.getenv('EMAIL_FAIL')
         , subject= 'MM Daily Dash - ' + dt.date.today().strftime('%m-%d-%Y')
         , body=body
-        , user=os.getenv('email_uid')
-        , password=os.getenv('email_pwd')
-        , bcc_email_addresses=os.getenv('email_send')
+        , user=os.getenv('EMAIL_UID')
+        , password=os.getenv('EMAIL_PWD')
+        , bcc_email_addresses=os.getenv('EMAIL_SEND')
         )
 
 

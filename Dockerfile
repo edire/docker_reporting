@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11.6-slim
 
 RUN apt-get update && apt-get install -y git
 
@@ -12,4 +12,4 @@ RUN mkdir /app
 COPY ./app /app
 WORKDIR /app
 
-CMD ["python", "app.py"]
+CMD ["/bin/sh", "/app/run.sh"]
