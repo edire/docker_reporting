@@ -11,7 +11,7 @@ logger.info('Beginning package')
 
 try:
 
-        import run.main as main
+        import main
 
         logger.info('Done, No Problems!')
 
