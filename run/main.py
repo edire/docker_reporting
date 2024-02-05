@@ -615,17 +615,17 @@ screenshot(filepath_ytd_budget_html, filepath_ytd_budget)
 logger.info('Send Email Update')
 
 body = ["Good morning!  Here is today's update:<br><br>",
-        # filepath_month_chart,
-        # "<br>",
-        # filepath_ytd_budget,
-        # "<br>",
-        # filepath_month_table,
-        # "<br>",
         filepath_day_chart,
         "<br>",
         filepath_budget_table,
         "<br>",
         filepath_day_table,
+        "<br>",
+        filepath_month_chart,
+        "<br>",
+        filepath_ytd_budget,
+        "<br>",
+        filepath_month_table,
         # "<br>For additional views please visit the following link:",
         # "https://lookerstudio.google.com/reporting/b656cb16-6007-467b-85ef-b412931d5b7a",
         "<br>Have a great day!"]
