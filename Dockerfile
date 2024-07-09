@@ -12,4 +12,7 @@ RUN mkdir /app
 COPY ./app /app
 WORKDIR /app
 
+# RUN mkdir /app/run
+# COPY ./run /app/run
+
 CMD ["/bin/sh", "/app/run.sh"]

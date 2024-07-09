@@ -1,20 +1,9 @@
-#%% Local Code Only
-
-import socket
-host_name = socket.gethostname()
-local_name = 'eric-Latitude-3440'
-if host_name == local_name:
-    from dotenv import load_dotenv
-    load_dotenv('./.env', override=True)
-
-
 #%% Imports
 
 from dbharbor.bigquery import SQL
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime as dt
-# import dataframe_image as dfi
 from demail.gmail import SendEmail
 import os
 import dlogging
@@ -38,11 +27,9 @@ def df_add_missing_clmns(df, clist = cat_list):
 
 def screenshot(filepath_html, filepath_png):
     filepath_html = os.path.realpath(filepath_html)
-    if host_name == local_name:
-        filepath_html = 'file:\\\\' + filepath_html
-    else:
-        filepath_html = 'file://' + filepath_html
-    with ChromeDriver(no_sandbox=True, window_size='1920,1080', use_chromium=True) as driver:
+    # filepath_html = 'file:\\\\' + filepath_html
+    filepath_html = 'file://' + filepath_html
+    with ChromeDriver(no_sandbox=True, window_size='1920,1080', use_chromium=True, headless=True) as driver:
         driver.get(filepath_html)
         chart = driver.find_element(by='xpath', value='/html/body/table')
         chart.screenshot(filepath_png)
@@ -420,7 +407,7 @@ i, y = list(enumerate(dfg.sum(axis=1).cumsum()))[-1]
 ax.annotate('{:,.1f}'.format(y*1e-6), (x[i], y), ha='left', va='center')
 
 # Budget Line
-ax.plot(x, dfg_budget['amount'], color='red', ls='--', label='YTD Budget')
+ax.plot(x, dfg_budget['amount'], color='red', ls='--', label='Prior Year')
 i, y = list(enumerate(dfg_budget['amount']))[-1]
 ax.annotate('{:,.1f}'.format(y*1e-6), (x[i], y), ha='left', va='center', color='red')
 
