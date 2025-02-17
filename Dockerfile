@@ -1,18 +1,9 @@
-FROM python:3.11.6-slim
+FROM prefecthq/prefect:3.2.1-python3.12
 
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git chromium-driver
 
-RUN apt-get update && apt-get install -y chromium-driver
+COPY requirements.txt /opt/prefect/docker_reporting/requirements.txt
+RUN python -m pip install -r /opt/prefect/docker_reporting/requirements.txt
 
-# Install Python dependencies.
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
-
-RUN mkdir /app
-COPY ./app /app
-WORKDIR /app
-
-# RUN mkdir /app/run
-# COPY ./run /app/run
-
-CMD ["/bin/sh", "/app/run.sh"]
+COPY . /opt/prefect/docker_reporting/
+WORKDIR /opt/prefect/docker_reporting/
