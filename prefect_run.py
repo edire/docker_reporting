@@ -1,6 +1,6 @@
 #%% Imports
 
-from prefect import flow
+from prefect import flow, task
 from prefect.variables import Variable
 from prefect.blocks.system import Secret
 from dbharbor.bigquery import SQL
@@ -12,11 +12,12 @@ import os
 from matplotlib.dates import date2num
 from dwebdriver import ChromeDriver
 import json
+import asyncio
+import check_good_data
 
 
-
-@flow(log_prints=True)
-def run_email_cash_dash():
+@task(log_prints=True)
+def run_email_cash_dash_task():
     var1 = Variable.get('cash_dash_categories')
     cat_list = var1['CAT_LIST'].split(',')
 
@@ -620,6 +621,12 @@ def run_email_cash_dash():
             , bcc_email_addresses=EMAIL_SEND
             )
 
+
+def run_email_cash_dash():
+    if asyncio.run(check_good_data.get_data_status()):
+        run_email_cash_dash_task()
+    else:
+        print("Data is not ready, skipping email cash dash.")
 
 
 if __name__ == '__main__':
